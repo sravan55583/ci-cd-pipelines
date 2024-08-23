@@ -1,0 +1,44 @@
+pipeline{
+    agent any
+   parameters {
+  string defaultValue: 'master', description: 'Enter target branch', name: 'target_branch'
+  choice choices: ['---select----', 'dev ', 'prod', 'stag'], description: 'select environment', name: 'environment'
+  booleanParam defaultValue: false, description: 'please select the deploy', name: 'deploy'
+    }
+        stages
+        {
+            stage("Parameters")
+            {
+                
+                steps{
+
+                    sh label: '', script: 'echo "This is parameter stage "'
+                    echo "${params.target_branch}"
+					echo "${params.environment}"
+					echo "${params.deploy}"
+				}
+				}
+				stage ("SCM"){
+				steps{
+				git branch: '$target_branch', changelog: false, credentialsId: 'github_cred', poll: false, url: 'https://github.com/sravan55583/sampletest.git'
+				}
+				}
+				stage ("build"){
+				steps{
+				sh 'mvn clean package'
+				}
+				}
+				stage ("calling CD_job"){
+				steps{
+				sh 'echo "calling cd job..."'
+				build(job: "CD_job", parameters: [string(name: 'environment', value: "${params.environment}"),
+                string(name: 'target_branch', value: "${params.target_branch}"),
+                string(name: 'deploy', value: "${params.deploy}")])
+				sh 'echo "cd job completed successfully"'
+				}
+				}
+	}	
+   }	
+   
+   
+   
